@@ -54,3 +54,5 @@ dkms.conf
 /**/builddir/*
 .vscode
 *.bin
+newlib-*
+gnu-efi-*
