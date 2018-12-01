@@ -1,0 +1,36 @@
+
+cmake_minimum_required (VERSION 2.6)
+
+project(Uefi_main)
+
+# set versions
+set (Uefi_main_VERSION_MAJOR 0)
+set (Uefi_main_VERSION_MINOR 0)
+
+enable_language(C ASM)
+
+if (CMAKE_CROSSCOMPILING AND (CMAKE_SYSTEM_NAME STREQUAL "Generic"))
+    # Can not build shared library when CMAKE_SYSTEM_NAME is "Generic"
+    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+endif ()
+
+
+add_library(uefi_main SHARED uefi_main.c early_init.c drivers/arm_pl011.c)
+
+include_directories(drivers/)
+
+# select target machine(QEMU or SYNQUACER)
+add_definitions(-DTARGET_SYNQUACER)
+
+
+# boot scripts
+file(COPY startup.nsh DESTINATION ${CMAKE_BINARY_DIR}/)
+file(COPY qemu-aarch64-uefi.sh DESTINATION ${CMAKE_BINARY_DIR}/)
+
+# translate ELF to PE
+add_custom_command(
+   TARGET uefi_main
+   POST_BUILD
+   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+   COMMAND llvm-objcopy -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .dynstr -j .rel -j .rel.dyn -j .rela -j .rela.dyn -j .reloc -O binary libuefi_main.so uefi_main.efi
+)
